@@ -24,6 +24,10 @@ const (
 	PlanEnterprise = "e"
 )
 
+const (
+	StripePlan = "plan_"
+)
+
 var Plans = []string{PlanPersonal, PlanBusiness, PlanEnterprise}
 
 var reserved = []string{
@@ -39,6 +43,7 @@ type Site struct {
 	Domain       string       `db:"domain"` // Domain for which the service is (arp242.net)
 	Code         string       `db:"code"`   // Domain code (arp242, which makes arp242.goatcounter.com)
 	Plan         *string      `db:"plan"`   // TODO(public): only a ptr because of migration.
+	Stripe       string       `db:"stripe"`
 	Settings     SiteSettings `db:"settings"`
 	LastStat     *time.Time   `db:"last_stat"`
 	ReceivedData bool         `db:"received_data"`

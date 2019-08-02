@@ -11,6 +11,9 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/jmoiron/sqlx"
+	"github.com/stripe/stripe-go"
+	"github.com/stripe/stripe-go/customer"
+	"github.com/stripe/stripe-go/sub"
 	"github.com/teamwork/guru"
 	"github.com/teamwork/validate"
 
@@ -92,14 +95,15 @@ func (h Website) doSignup(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	s := goatcounter.Site{
+	// Create site.
+	site := goatcounter.Site{
 		Domain: args.Domain,
 		Code:   args.Code,
 		Plan:   &plan,
 	}
 
-	s.Defaults(r.Context())
-	err = s.Validate(r.Context())
+	site.Defaults(r.Context())
+	err = site.Validate(r.Context())
 	if err != nil {
 		if v, ok := err.(*validate.Validator); ok {
 			return zhttp.Template(w, "signup.gohtml", struct {
@@ -110,6 +114,32 @@ func (h Website) doSignup(w http.ResponseWriter, r *http.Request) error {
 				Validate map[string][]string
 			}{newGlobals(w, r), "signup", plan, planName, v.Errors})
 		}
+		return err
+	}
+
+	// Create user.
+	// TODO
+
+	// Create Stripe customer.
+	// pk_test_pnQ304tcSKasn28BzxHALMyC00ubkyTW0q
+	stripe.Key = "sk_test_1Dexvk0UoDE6fa5St9ob2B5W00huIXcLaT"
+
+	params := &stripe.CustomerParams{
+		Email: stripe.String(args.Email),
+	}
+	params.SetSource("src_18eYalAHEMiOZZp1l9ZTjSU0") // TODO
+	customer, err := customer.New(params)
+	if err != nil {
+		return err
+	}
+	site.Stripe = customer.ID
+
+	_, err = sub.New(&stripe.SubscriptionParams{
+		Customer: stripe.String(customer.ID),
+		Items: []*stripe.SubscriptionItemsParams{{
+			Plan: stripe.String("plan_CBXbz9i7AIOTzr"), // TODO
+		}}})
+	if err != nil {
 		return err
 	}
 
